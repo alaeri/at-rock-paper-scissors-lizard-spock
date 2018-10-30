@@ -130,6 +130,26 @@ app.post('/:step', function(req, res) {
             }
         });
 
+        busboy.on('field', function(name, field) {
+            console.log('Got a field:', name);
+            if(name == "upload"){
+                const filepath = path.join(os.tmpdir(), `${Date.now()}.jpg`);
+                var buffer = new Buffer(field.split(",")[1], 'base64');
+                fs.writeFileSync(filepath, buffer);
+                const options = {
+                    destination: `/${stepName}/${Date.now()}.jpg`
+                };
+
+                bucket.upload(filepath, options, function(err, file) {
+                    console.log("Uploaded")
+                });
+
+                res.writeHead(200, {'Content-Type': 'text/html'});
+                res.write(`${step.nextStep}`);
+                res.end();
+            }
+        })
+
         // Triggered once all uploaded files are processed by Busboy.
         // We still need to wait for the disk writes (saves) to complete.
         busboy.on('finish', () => {
